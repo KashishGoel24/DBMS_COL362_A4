@@ -53,7 +53,7 @@ public class PRules {
             return new PProject(
                     project.getCluster(),
                     project.getTraitSet().replace(PConvention.INSTANCE),
-                    convert(project.getInput(), project.getInput().getTraitSet()
+                    convert(project.getInput(), project.().getTraitSet()
                             .replace(PConvention.INSTANCE)),
                     project.getProjects(),
                     project.getRowType());

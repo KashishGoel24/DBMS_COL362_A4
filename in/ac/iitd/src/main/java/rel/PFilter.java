@@ -168,7 +168,7 @@ public class PFilter extends Filter implements PRel {
                     return compare(operands, inputRow) >= 0;
                 case "=": // Equal to operator
                     return compare(operands, inputRow) == 0;
-                case "!=": // Not equal to operator
+                case "<>": // Not equal to operator
                     return compare(operands, inputRow) != 0;
                 case "+": // Addition operator
                     return arithmeticOperation(operands, inputRow, "+");

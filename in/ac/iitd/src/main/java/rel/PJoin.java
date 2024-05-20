@@ -60,8 +60,8 @@ public class PJoin extends Join implements PRel {
     private Map<List<Object>, List<Object[]>> righthashTable = new HashMap<>();
     private List<Object[]> leftRecordsArray = new ArrayList<>();
     private List<Object[]> rightRecordsArray = new ArrayList<>();
-    private int leftrecordSize ;
-    private int rightrecordSize;
+    private int leftrecordSize = 0;
+    private int rightrecordSize = 0;
 
     // returns true if successfully opened, false otherwise
     @Override
@@ -108,21 +108,6 @@ public class PJoin extends Join implements PRel {
     }
 
     public void probe(PRel input_right, Integer[] rightAttributes, List<Object[]> rightrecords, PRel input_left, Integer[] leftAttributes, List<Object[]> leftrecords) {
-        // Object[] inputRow;
-
-        // while (input_right.hasNext()) {
-        //     inputRow = input_right.next();
-        //     List<Object> key = getKey(rightAttributes, inputRow);
-        //     List<Object[]> matchingLeftRows = hashTable.get(key);
-            
-        //     if (matchingLeftRows != null){
-        //         for (Object[] leftRow : matchingLeftRows) {
-        //             Object[] resultRow;
-        //             resultRow = joinRows(leftRow, inputRow, getJoinType());
-        //             allInputRows.add(resultRow);
-        //         }
-        //     }
-        // }
 
         if (joinType == JoinRelType.LEFT){
             Object[] leftrow ;
@@ -148,6 +133,7 @@ public class PJoin extends Join implements PRel {
                 }
             }
         }
+
         else if (joinType == JoinRelType.RIGHT){
             Object[] rightrow ;
             for (int i = 0 ; i < rightRecordsArray.size() ; i++){
@@ -173,6 +159,7 @@ public class PJoin extends Join implements PRel {
                 }
             }
         }
+
         else if (joinType == JoinRelType.FULL){
             Object[] leftrow ;
             for (int i = 0 ; i < leftRecordsArray.size() ; i++){
@@ -212,6 +199,7 @@ public class PJoin extends Join implements PRel {
                 }
             }
         }
+
         else if (joinType == JoinRelType.INNER){
             Object[] rightrow ;
             for (int i = 0 ; i < rightRecordsArray.size() ; i++){
@@ -231,54 +219,6 @@ public class PJoin extends Join implements PRel {
         
         return;
     }
-
-    // private Object[] joinRows(Object[] leftRow, Object[] rightRow, JoinRelType joinType) {
-    //     int leftRowSize = leftRow.length;
-    //     int rightRowSize = rightRow.length;
-    //     Object[] resultRow;
-    
-    //     switch (joinType) {
-    //         case INNER:
-    //             // For INNER JOIN, combine rows only if there's a match
-    //             if (leftRow != null && rightRow != null) {
-    //                 resultRow = new Object[leftRowSize + rightRowSize];
-    //                 System.arraycopy(leftRow, 0, resultRow, 0, leftRowSize);
-    //                 System.arraycopy(rightRow, 0, resultRow, leftRowSize, rightRowSize);
-    //                 return resultRow;
-    //             }
-    //             break;
-    //         case LEFT:
-    //             // For LEFT JOIN, add left row regardless of match, use NULLs for right columns if no match
-    //             resultRow = new Object[leftRowSize + rightRowSize];
-    //             System.arraycopy(leftRow, 0, resultRow, 0, leftRowSize);
-    //             if (rightRow != null) {
-    //                 System.arraycopy(rightRow, 0, resultRow, leftRowSize, rightRowSize);
-    //             }
-    //             return resultRow;
-    //         case RIGHT:
-    //             // For RIGHT JOIN, add right row regardless of match, use NULLs for left columns if no match
-    //             resultRow = new Object[leftRowSize + rightRowSize];
-    //             if (leftRow != null) {
-    //                 System.arraycopy(leftRow, 0, resultRow, 0, leftRowSize);
-    //             }
-    //             System.arraycopy(rightRow != null ? rightRow : new Object[rightRowSize], 0, resultRow, leftRowSize, rightRowSize);
-    //             return resultRow;
-    //         case FULL:
-    //             // For FULL JOIN, add both left and right rows, use NULLs if no match
-    //             resultRow = new Object[leftRowSize + rightRowSize];
-    //             if (leftRow != null) {
-    //                 System.arraycopy(leftRow, 0, resultRow, 0, leftRowSize);
-    //             }
-    //             if (rightRow != null) {
-    //                 System.arraycopy(rightRow, 0, resultRow, leftRowSize, rightRowSize);
-    //             }
-    //             return resultRow;
-    //         default:
-    //             // Handle other join types if needed
-    //             break;
-    //     }
-    //     return null;
-    // }
 
     // any postprocessing, if needed
     @Override

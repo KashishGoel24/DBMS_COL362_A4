@@ -99,6 +99,7 @@ public class PProject extends Project implements PRel {
             RexLiteral literal = (RexLiteral) expression;
             switch (literal.getType().getSqlTypeName()) {
                 case CHAR:
+                    return literal.getValueAs(String.class);
                 case VARCHAR:
                     return literal.getValueAs(String.class);
                 case DECIMAL:

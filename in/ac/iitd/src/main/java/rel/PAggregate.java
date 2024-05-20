@@ -11,10 +11,13 @@ import org.apache.calcite.util.ImmutableBitSet;
 import convention.PConvention;
 import edu.emory.mathcs.backport.java.util.Arrays;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // Count, Min, Max, Sum, Avg
 public class PAggregate extends Aggregate implements PRel {
@@ -101,24 +104,127 @@ public class PAggregate extends Aggregate implements PRel {
             for (int i = 0; i < aggcalls.size(); i++) {
                 AggregateCall aggCall = aggcalls.get(i);
                 List<Integer> argList = aggCall.getArgList();
-    
+                List<Object> distinctValues = new ArrayList<>();
+
+                if (aggCall.isDistinct()) {
+                    Set<List<Object>> distinctSet = new HashSet<>();
+                    for (Object[] row : rows) {
+                        List<Object> distinctRowValues = new ArrayList<>();
+                        for (Integer argIndex : argList) {
+                            distinctRowValues.add(row[argIndex]);
+                        }
+                        distinctSet.add(distinctRowValues);
+                    }
+                    distinctValues.addAll(distinctSet);
+                }
+        
                 switch (aggCall.getAggregation().getName().toUpperCase()) {
                     case "SUM":
-                        int sum = 0;
+                        if (aggCall.isDistinct()) {
+                            Object sum = null;
+                            for (Object[] row : rows) {
+                                Object value = row[argList.get(0)];
+                                if (distinctValues.contains(value)) {
+                                    if (sum == null) sum = 0;
+                                    if (value instanceof Integer) {
+                                        sum = (int) sum + (int) value;
+                                    } else if (value instanceof Double) {
+                                        sum = (double) sum + (double) value;
+                                    } else if (value instanceof Float) {
+                                        sum = (float) sum + (float) value;
+                                    } else if (value instanceof BigDecimal) {
+                                        sum = (double) sum + ((BigDecimal) value).doubleValue();
+                                    }
+                                }
+                            }
+                        }
+                        Object sum = null;
                         for (Object[] row : rows) {
-                            System.out.println(row[argList.get(0)]);
-                            sum += (Integer) row[argList.get(0)];
+                            Object value = row[argList.get(0)];
+                            if (value instanceof Integer) {
+                                if (sum == null) sum = 0;
+                                sum = (int) sum + (int) value;
+                            } else if (value instanceof Double) {
+                                if (sum == null) sum = 0.0;
+                                sum = (double) sum + (double) value;
+                            } else if (value instanceof Float) {
+                                if (sum == null) sum = 0.0f;
+                                sum = (float) sum + (float) value;
+                            } else if (value instanceof BigDecimal) {
+                                if (sum == null) sum = 0.0;
+                                sum = (double)sum + ((BigDecimal) value).doubleValue();
+                            }
                         }
                         outputRow[key.size() + i] = sum;
                         break;
                     case "AVG":
-                        long total = 0;
-                        for (Object[] row : rows) {
-                            total += (long) row[argList.get(0)];
+                        if (aggCall.isDistinct()) {
+                            Object total = null;
+                            int rowCount = distinctValues.size();
+                            for (Object distinctValue : distinctValues) {
+                                if (total == null) total = 0L;
+                                if (distinctValue instanceof Integer) {
+                                    total = (long) total + (int) distinctValue;
+                                } else if (distinctValue instanceof Double) {
+                                    total = (double) total + (double) distinctValue;
+                                } else if (distinctValue instanceof Float) {
+                                    total = (float) total + (float) distinctValue;
+                                } else if (distinctValue instanceof BigDecimal) {
+                                    total = (double) total + ((BigDecimal) distinctValue).doubleValue();
+                                }
+                            }
+                            if (total != null && rowCount > 0) {
+                                if (total instanceof Long) {
+                                    outputRow[key.size() + i] = (double) ((long) total) / rowCount;
+                                } else if (total instanceof Double) {
+                                    outputRow[key.size() + i] = (double) total / rowCount;
+                                } else if (total instanceof Float) {
+                                    outputRow[key.size() + i] = (float) total / rowCount;
+                                } else if (total instanceof BigDecimal) {
+                                    outputRow[key.size() + i] = ((BigDecimal) total).doubleValue() / rowCount;
+                                }
+                            } else {
+                                outputRow[key.size() + i] = null;
+                            }
+                            break;
                         }
-                        outputRow[key.size() + i] = (double) total / rows.size();
+                        Object total = null;
+                        int rowCount = rows.size();
+                        for (Object[] row : rows) {
+                            Object value = row[argList.get(0)];
+                            if (value instanceof Integer) {
+                                if (total == null) total = 0L;
+                                total = (long) total + (int) value;
+                            } else if (value instanceof Double) {
+                                if (total == null) total = 0.0;
+                                total = (double) total + (double) value;
+                            } else if (value instanceof Float) {
+                                if (total == null) total = 0.0f;
+                                total = (float) total + (float) value;
+                            } else if (value instanceof BigDecimal) {
+                                if (total == null) total = 0.0;
+                                total = (double)total + ((BigDecimal) value).doubleValue();
+                            }
+                        }
+                        if (total != null && rowCount > 0) {
+                            if (total instanceof Long) {
+                                outputRow[key.size() + i] = (double) ((long) total) / rowCount;
+                            } else if (total instanceof Double) {
+                                outputRow[key.size() + i] = (double) total / rowCount;
+                            } else if (total instanceof Float) {
+                                outputRow[key.size() + i] = (float) total / rowCount;
+                            } else if (total instanceof BigDecimal) {
+                                outputRow[key.size() + i] = ((BigDecimal) total).doubleValue() / rowCount;
+                            }
+                        } else {
+                            outputRow[key.size() + i] = null;
+                        }
                         break;
                     case "COUNT":
+                        if (aggCall.isDistinct()){
+                            outputRow[key.size() + i] = distinctValues.size();
+                            break;
+                        }
                         outputRow[key.size() + i] = rows.size();
                         break;
                     case "MAX":
@@ -142,7 +248,7 @@ public class PAggregate extends Aggregate implements PRel {
                         outputRow[key.size() + i] = min;
                         break;
                     default:
-                        outputRow[key.size() + i] = "Unsupported";
+                        outputRow[key.size() + i] = null;
                         break;
                 }
             }
